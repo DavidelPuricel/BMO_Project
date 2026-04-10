@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>BMO Quiz Creator</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+
+/* ===== PAGINA ===== */
+body {
+  margin: 0;
+  font-family: 'Press Start 2P', cursive;
+  overflow: hidden; /* Evităm scroll-ul inutil */
+}
+
+/* ===== LAYOUT ===== */
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* ===== STÂNGA (BMO) ===== */
+.left {
+  width: 50%;
+  background: #9be7d6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-right: 10px solid #7dc7b6; /* Un mic contur stilizat */
+}
+
+/* container animație */
+.bmo-container {
+  display: inline-block;
+  transition: transform 0.2s ease; /* Pentru efectul de click */
+}
+
+/* imagine MĂRITĂ */
+.bmo-img {
+  width: 550px; /* Am mărit de la 350px la 550px */
+  height: auto;
+  animation: floatBMO 4s ease-in-out infinite;
+}
+
+/* animație naturală mai amplă */
+@keyframes floatBMO {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  50%  { transform: translateY(-20px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* ===== DREAPTA (FORM) ===== */
+.right {
+  width: 50%;
+  background: #b8f2e6;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Titlu MĂRIT */
+.right h1 {
+  font-size: 28px; /* Mărit substanțial */
+  line-height: 1.4;
+  margin-bottom: 40px;
+  color: #2c3e50;
+}
+
+/* Input-uri MĂRITE */
+.right input {
+  margin: 15px 0;
+  padding: 20px;
+  font-size: 16px; /* Text mai lizibil */
+  font-family: 'Press Start 2P', cursive;
+  border: 4px solid #2ecc71;
+  background: rgba(255, 255, 255, 0.5);
+  outline: none;
+}
+
+/* Butoane MĂRITE */
+.right button {
+  margin-top: 20px;
+  padding: 25px;
+  background: #2ecc71;
+  border: none;
+  border-bottom: 8px solid #27ae60; /* Efect 3D */
+  color: white;
+  cursor: pointer;
+  font-size: 16px; /* Text buton mai mare */
+  font-family: 'Press Start 2P', cursive;
+  transition: all 0.1s;
+}
+
+.right button:active {
+  transform: translateY(4px);
+  border-bottom-width: 4px;
+}
+
+.right button:first-of-type {
+  background: #3498db;
+  border-bottom-color: #2980b9;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="left">
+    <div class="bmo-container">
+      <img src="bmo.png" class="bmo-img" alt="BMO">
+    </div>
+  </div>
+
+  <div class="right">
+
+    <h1>Create a Quiz for BMO</h1>
+
+    <input id="q" placeholder="Question">
+    <input id="a" placeholder="Answer A">
+    <input id="b" placeholder="Answer B">
+
+    <button onclick="connectBLE()">Connect to BMO</button>
+    <button onclick="sendData()">Send Question</button>
+
+  </div>
+
+</div>
+
+<script>
+let device;
+let characteristic;
+
+async function connectBLE() {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "BMO_QUIZ_CONTROLLER" }],
+      optionalServices: ["4fafc201-1fb5-459e-8fcc-c5c9c331914b"]
+    });
+
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
+    characteristic = await service.getCharacteristic("beb5483e-36e1-4688-b7f5-ea07361b26a8");
+
+    alert("BMO is Connected! Yay!");
+  } catch (e) {
+    console.log(e);
+    alert("Connection failed. Make sure BMO is in Quiz mode.");
+  }
+}
+
+async function sendData() {
+  const data = {
+    question: document.getElementById("q").value,
+    a: document.getElementById("a").value,
+    b: document.getElementById("b").value
+  };
+
+  /* Efect vizual pe BMO la trimitere */
+  const bmo = document.querySelector(".bmo-container");
+  bmo.style.transform = "scale(1.2)";
+  setTimeout(() => { bmo.style.transform = "scale(1)"; }, 300);
+
+  if (characteristic) {
+    const encoded = new TextEncoder().encode(JSON.stringify(data));
+    await characteristic.writeValue(encoded);
+    console.log("Sent:", data);
+  } else {
+    alert("Connect to BMO first!");
+  }
+}
+</script>
+
+</body>
+</html>
